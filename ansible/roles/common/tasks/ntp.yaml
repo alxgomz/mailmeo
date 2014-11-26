@@ -1,0 +1,4 @@
+---
+- name: Install NTP server
+  apt: name=ntp state=present
+

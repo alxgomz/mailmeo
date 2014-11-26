@@ -1,0 +1,7 @@
+---
+- name: Install ansible requirements for debian hosts
+  apt: name={{ item.pkg }} state={{ item.state }} update_cache={{ item.uc }}
+  with_items:
+    - { pkg: 'python-apt', state: 'present', uc: 'yes' }
+    - { pkg: 'debconf', state: 'present', uc: 'no' }
+    - { pkg: 'debconf-utils', state: 'present', uc: 'no' }

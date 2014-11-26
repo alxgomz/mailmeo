@@ -1,0 +1,27 @@
+---
+# pki_type specify wich pki has to be used.
+# - CA: certificates are issued by a CA (needs `cert`,`cert_key` and `cert_chain`)
+# - self: no pki is used (all certs are self signed, only provides encryption)
+pki_type: self
+
+# Points to the root CA certificate
+# Usefull for client certificate validation
+#ca_root:
+
+# Set to the path of the SSL cert
+#cert:
+
+# Set to the path of the certificate key
+#cert_key:
+
+# Set to the path of the certificate chain
+#cert_chain:
+
+# Set the default lifetime for a self_signed certificate
+self_cert_lifetime: 3652
+
+# Set the Subject pattern for self signed certificates
+self_subject: /C=FR/ST=Yvelines/L=Viroflay/O=Lab/CN=
+
+# Make encryption mandatory (value is not important)
+#force_encrypt:

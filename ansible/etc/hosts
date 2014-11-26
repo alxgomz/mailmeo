@@ -1,0 +1,5 @@
+# ONLY SPECIFY FQDN hostnames. IP or non-FQDN hostnames are not allowed
+[ldapservers]
+arwen.middle.earth
+legolas.middle.earth
+galadriel.middle.earth

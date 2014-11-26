@@ -1,0 +1,18 @@
+---
+- name: Install basic SSL package
+  apt: name=ssl-cert state=present cache_valid_time=86000
+  when: ansible_pkg_mgr == 'apt'
+  tags:
+
+- name: Setup self signed SSL certs for LDAP server
+  command: openssl req -new -nodes -x509 -days {{ self_cert_lifetime | default(90) }} -subj {{ self_subject }}{{ ansible_fqdn }} -keyout /etc/ssl/private/{{ ansible_fqdn }}.key -out /etc/ssl/certs/{{ ansible_fqdn }}.crt
+  args:
+    creates: /etc/ssl/certs/{{ ansible_fqdn }}.crt
+  when: pki_type == 'self'
+  tags:
+    - ssl
+
+- name: Ensure proper mode on private keys
+  file: path=/etc/ssl/private/{{ ansible_fqdn }}.key mode=0640 owner=root group=ssl-cert
+  tags:
+    - ssl

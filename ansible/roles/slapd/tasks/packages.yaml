@@ -1,0 +1,34 @@
+---
+- name: Set debconf db
+  debconf: name='slapd' question={{ item.question }} value={{ item.value }} vtype={{ item.vtype }}
+  with_items:
+    - { question: 'shared/organization', value: "{{ ldap_domain }}", vtype: 'string' }
+    - { question: 'slapd/domain', value: "{{ ldap_domain }}", vtype: 'string' }
+    - { question: 'slapd/internal/generated_adminpw', value: "{{ ldap_password }}", vtype: 'password' }
+    - { question: 'slapd/internal/adminpw', value: "{{ ldap_password }}", vtype: 'password' }
+    - { question: 'slapd/password1', value: "{{ ldap_password }}", vtype: 'password' }
+    - { question: 'slapd/password2', value: "{{ ldap_password }}", vtype: 'password' }
+    - { question: 'slapd/no_configuration', value: 'no', vtype: 'boolean' }
+    - { question: 'slapd/backend', value: "{{ slapd_backend | default('HDB') }}", vtype: 'string' }
+  when: ansible_pkg_mgr == 'apt'
+  tags:
+    - ldap
+    - pkg_configure
+
+- name: Install OpenLDAP server
+  apt: name={{ item }} state=present
+  with_items:
+    - slapd
+    - ldap-utils
+  when: ansible_pkg_mgr == 'apt'
+  tags:
+    - ldap
+    - pkg_install
+
+- name: Set slapd daemon binding options
+  replace: dest=/etc/default/slapd regexp='^\s*(SLAPD_SERVICES=).*' replace='\1"ldapi:/// ldap://localhost ldap://{{ ansible_fqdn }}"'
+  notify: Restart slapd
+  tags:
+    - ldap
+    - pkg_configure
+

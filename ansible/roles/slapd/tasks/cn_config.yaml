@@ -1,0 +1,123 @@
+---
+- name: Generate hashed password
+  command: slappasswd -s {{ cnconfig_password|default(ldap_password) }}
+  register: h_cnconfig_password
+  tags:
+    - ldap
+
+- name: Check if TLS is already configured
+  shell: ldapsearch -LLL -Y EXTERNAL -H ldapi:/// -b cn=config -s base '(&(olcTLSCertificateFile=*)(olcTLSCertificateKeyFile=*))' dn
+  register: tlsConfig
+  tags:
+    - ssl
+    - ldap
+
+- name: Check if SyncRepl is already enabled for config
+  shell: "ldapsearch -LLL -Y EXTERNAL -H ldapi:/// -b olcDatabase={0}config,cn=config -s one '(objectClass=olcSyncProvConfig)' dn 2>/dev/null | grep -c '^dn: '"
+  register: syncreplConfig
+  tags:
+    - ldap
+  failed_when: syncreplConfig.rc > 1
+
+- name: Check all replicas are configured
+  shell: "ldapsearch -LLL -Y EXTERNAL -H ldapi:/// -b olcDatabase={0}config,cn=config '(olcSyncRepl=*)' olcSyncrepl 2>/dev/null | grep -c '^olcSyncrepl: '"
+  register: syncreplReplicas
+  tags:
+    - ldap
+  failed_when: syncreplConfig.rc > 1
+
+- name: Make sure slapd can read certificates and keys
+  user: name=openldap groups=ssl-cert append=yes
+  tags:
+    - ldap
+    - ssl
+
+- name: Link certificates to a filename common to all LDAP servers
+  file: path={{ item.dir }}slapd{{ item.filext }} src={{ item.dir }}{{ ansible_fqdn }}{{ item.filext }} state=link
+  with_items:
+    - { dir: '/etc/ssl/certs/', filext: '.crt' }
+    - { dir: '/etc/ssl/private/', filext: '.key' }
+  tags:
+    - ldap
+    - ssl
+
+- name: Template to configure TLS OpenLDAP
+  template: src=../templates/openldap_conf-ssl.j2 dest=/tmp/{{ ansible_fqdn }}_openldap_conf-ssl.ldif
+  tags:
+    - ldap
+    - ssl
+  when: not tlsConfig.stdout
+
+- name: Template to configure OpenLDAP SyncRepl overlay
+  template: src=../templates/openldap_conf-syncrepl.j2 dest=/tmp/{{ ansible_fqdn }}_openldap_conf-syncrepl.ldif
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplConfig.stdout == '0'
+
+- name: Template to configure OpenLDAP SyncRepl providers
+  template: src=../templates/openldap_conf-providers.j2 dest=/tmp/{{ ansible_fqdn }}_openldap_conf-providers.ldif
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplReplicas.stdout != groups['ldapservers']|count
+
+- name: Confgure the cn=config database of OpenLDAP for TLS
+  command: ldapmodify -c -Y EXTERNAL -H ldapi:/// -f {{ ansible_fqdn }}_openldap_conf-ssl.ldif chdir=/tmp
+  ignore_errors: True
+  tags:
+    - ldap
+  when: not tlsConfig.stdout
+
+- name: Enable the SyncRepl overlay on the cn=config database
+  command: ldapmodify -c -Y EXTERNAL -H ldapi:/// -f {{ ansible_fqdn }}_openldap_conf-syncrepl.ldif chdir=/tmp
+  ignore_errors: True
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplConfig.stdout == '0'
+
+- name: Add the SyncRepl providers on the cn=config database
+  command: ldapmodify -c -Y EXTERNAL -H ldapi:/// -f {{ ansible_fqdn }}_openldap_conf-providers.ldif chdir=/tmp
+  ignore_errors: True
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplReplicas.stdout != groups['ldapservers']|count
+
+- name: Check if SyncRepl is already enabled for db
+  shell: "ldapsearch -LLL -Y EXTERNAL -H ldapi:/// -b olcDatabase={1}{{ slapd_backend|default('hdb') }},cn=config -s one '(objectClass=olcSyncProvConfig)' dn 2>/dev/null | grep -c '^dn: '"
+  register: syncreplDbConfig
+  tags:
+    - ldap
+  failed_when: syncreplConfig.rc > 1
+
+- name: Check all replicas are configured for db
+  shell: "ldapsearch -LLL -Y EXTERNAL -H ldapi:/// -b cn=config -s one '(&(olcSuffix={{ ldap_suffix }})(olcSyncRepl=*))' olcSyncrepl 2>/dev/null | grep -c '^olcSyncrepl: '"
+  register: syncreplDbReplicas
+  tags:
+    - ldap
+  failed_when: syncreplConfig.rc > 1
+
+- name: Template to configure OpenLDAP SyncRepl overlay on db
+  template: src=../templates/openldap_db-syncrepl.j2 dest=/tmp/{{ ansible_fqdn }}_openldap_db-syncrepl.ldif
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplDbConfig.stdout == '0'
+
+- name: Template to configure OpenLDAP SyncRepl providers on db
+  template: src=../templates/openldap_db-providers.j2 dest=/tmp/{{ ansible_fqdn }}_openldap_db-providers.ldif
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplDbReplicas.stdout != groups['ldapservers']|count
+
+- name: Enable the SyncRepl overlay on the database
+  command: ldapmodify -c -Y EXTERNAL -H ldapi:/// -f {{ ansible_fqdn }}_openldap_db-syncrepl.ldif chdir=/tmp
+  ignore_errors: True
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplDbConfig.stdout == '0'
+
+- name: Add the SyncRepl providers on the cn=config database
+  command: ldapmodify -c -Y EXTERNAL -H ldapi:/// -f {{ ansible_fqdn }}_openldap_db-providers.ldif chdir=/tmp
+  ignore_errors: True
+  tags:
+    - ldap
+  when: groups['ldapservers']|count > 1 and syncreplDbReplicas.stdout != groups['ldapservers']|count
+

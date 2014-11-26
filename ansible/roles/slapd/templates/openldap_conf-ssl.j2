@@ -1,0 +1,17 @@
+dn: cn=config
+changetype: modify
+{%if ca_root is defined %}
+replace: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/ssl/certs/{{ ca_root | basename }}
+-
+{% else %}
+replace: olcTLSCACertificatePath
+olcTLSCACertificatePath: /etc/ssl/certs/
+-
+{% endif %}
+replace: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/ssl/certs/slapd.crt
+-
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/ssl/private/slapd.key
+

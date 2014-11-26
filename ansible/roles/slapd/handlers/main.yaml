@@ -1,0 +1,15 @@
+---
+- name: Remove TLS LDIF config file
+  file: path=/tmp/{{ ansible_fqdn }}_openldap_conf-ssl.ldif state=absent
+  tags:
+    - ldap
+
+- name: Remove syncrepl LDIF config file
+  file: path=/tmp/{{ ansible_fqdn }}_openldap_conf-syncrepl.ldif state=absent
+  tags:
+    - ldap
+
+- name: Restart slapd
+  service: name=slapd state=restarted
+  tags:
+    - ldap

@@ -1,0 +1,11 @@
+dn: olcDatabase={1}{{ slapd_backend|default('hdb') }},cn=config
+changetype: modify
+replace: olcLimits
+olcLimits: dn.exact="cn=admin,dc={{ ldap_suffix }}" time.soft=unlimited time.hard=unlimited size.soft=unlimited size.hard=unlimited
+
+dn: olcOverlay=syncprov,olcDatabase={1}{{ slapd_backend|default('hdb') }},cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcSyncProvConfig
+olcOverlay: syncprov
+

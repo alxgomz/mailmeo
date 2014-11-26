@@ -1,0 +1,11 @@
+---
+# ldap_domain is expanded to the LDAP base DN replacing "." by ",dc=" and prepended "dc="
+ldap_domain: "mail.meo"
+ldap_suffix: dc={{ ldap_domain | regex_replace('\.', ',dc=') }}
+ldap_password: "jtmm2p"
+
+# Slapd backend type
+#slapd_backend: "HDB"
+
+# If undefined this will default to the ldap_password
+#cnconfig_password: some_pass_for_config_backend

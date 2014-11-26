@@ -1,0 +1,25 @@
+dn: olcDatabase={1}{{ slapd_backend|default('hdb') }},cn=config
+changetype: modify
+replace: olcSyncRepl
+{% for ldaphost in groups['ldapservers'] %}
+{% if groups['ldapservers']|count <10 %}
+olcSyncRepl: rid=10{{ loop.index }} provider=ldap://{{ ldaphost }} binddn="cn=admin,{{ ldap_suffix }}"
+  bindmethod=simple credentials={{ ldap_password }}
+  searchbase="{{ ldap_suffix }}" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% elif groups['ldapservers']|count < 100 %}
+olcSyncRepl: rid=1{{ loop.index }} provider=ldap://{{ ldaphost }} binddn="cn=admin,{{ ldap_suffix }}"
+  bindmethod=simple credentials={{ ldap_password }}
+  searchbase="{{ ldap_suffix }}" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% else %}
+olcSyncRepl: rid={{ loop.index }} provider=ldap://{{ ldaphost }} binddn="cn=admin,{{ ldap_suffix }}"
+  bindmethod=simple credentials={{ ldap_password }}
+  searchbase="{{ ldap_suffix }}" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% endif %}
+{% if force_encrypt is defined %}
+  starttls=critical
+{% endif %}
+{% endfor %}
+-
+replace: olcMirrorMode
+olcMirrorMode: TRUE
+

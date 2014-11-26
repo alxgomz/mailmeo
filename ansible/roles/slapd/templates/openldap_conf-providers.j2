@@ -1,0 +1,32 @@
+dn: cn=config
+changetype: modify
+replace: olcServerID
+{% for ldaphost in groups['ldapservers'] %}
+olcServerID: {{ loop.index }} ldap://{{ ldaphost }}
+{% endfor %}
+
+dn: olcDatabase={0}config,cn=config
+changetype: modify
+replace: olcSyncRepl
+{% for ldaphost in groups['ldapservers'] %}
+{% if groups['ldapservers']|count <10 %}
+olcSyncRepl: rid=00{{ loop.index }} provider=ldap://{{ ldaphost }} binddn="cn=admin,cn=config"
+  bindmethod=simple credentials={{ cnconfig_password|default(ldap_password) }}
+  searchbase="cn=config" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% elif groups['ldapservers']|count < 100 %}
+olcSyncRepl: rid=0{{ loop.index }} provider=ldap://{{ ldaphost }} binddn="cn=admin,cn=config"
+  bindmethod=simple credentials={{ cnconfig_password|default(ldap_password) }}
+  searchbase="cn=config" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% else %}
+olcSyncRepl: rid={{ loop.index }} provider=ldap://{{ ldaphost }} binddn="cn=admin,cn=config"
+  bindmethod=simple credentials={{ cnconfig_password|default(ldap_password) }}
+  searchbase="cn=config" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% endif %}
+{% if force_encrypt is defined %}
+  starttls=critical
+{% endif %}
+{% endfor %}
+-
+replace: olcMirrorMode
+olcMirrorMode: TRUE
+

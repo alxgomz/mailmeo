@@ -1,0 +1,48 @@
+attributetype ( 2.16.840.1.113730.3.1.13 
+    NAME 'mailLocalAddress' 
+    DESC 'RFC822 email address of this recipient' 
+    EQUALITY caseIgnoreIA5Match 
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{256} ) 
+
+attributetype ( 2.16.840.1.113730.3.1.16 
+    NAME 'mailQuota' 
+    DESC 'Maiximal amount of disk space for a mailbox in kilobytes' 
+    EQUALITY integerMatch 
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 ) 
+
+attributetype ( 2.16.840.1.113730.3.1.18 
+    NAME 'mailHost' 
+    DESC 'FQDN of the SMTP/MTA of this recipient' 
+    EQUALITY caseIgnoreIA5Match 
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{256} 
+    SINGLE-VALUE ) 
+
+attributetype ( 2.16.840.1.113730.3.1.22 
+    NAME 'mailCopyAddress' 
+    DESC 'RFC822 email shadow copy address' 
+    EQUALITY caseIgnoreIA5Match 
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{256} ) 
+
+attributetype ( 2.16.840.1.113730.3.1.47 
+    NAME 'mailRoutingAddress' 
+    DESC 'RFC822 routing address of this recipient' 
+    EQUALITY caseIgnoreIA5Match 
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{256} ) 
+
+attributetype ( 2.16.840.1.113730.3.1.49 
+    NAME 'spamassassinUserPrefs' 
+    DESC 'SpamAssassin user preferences' 
+    EQUALITY caseIgnoreIA5Match 
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{256} ) 
+
+objectclass ( 2.16.840.1.113730.3.2.147 
+    NAME 'inetLocalMailRecipient' 
+    DESC 'Internet local mail recipient' 
+    SUP top AUXILIARY 
+    MAY    ( mailLocalAddress $ mailHost $ mailRoutingAddress $ mailCopyAddress $ mailQuota $ spamassassinUserPrefs ) ) 
+ 
+objectclass ( 2.16.840.1.113730.3.2.148 
+    NAME 'inetMailForwarder' 
+    DESC 'Internet mail Forward Address' 
+    SUP top AUXILIARY 
+    MAY    ( mailHost $ mailRoutingAddress ) )

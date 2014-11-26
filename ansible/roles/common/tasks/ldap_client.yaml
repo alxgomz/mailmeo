@@ -1,0 +1,8 @@
+---
+- name: Set LDAP client variables
+  lineinfile: dest=/etc/ldap/ldap.conf line="{{ item }}"
+  with_items:
+    - BASE "{{ ldap_suffix }}"
+    - "TLS_REQCERT allow"
+  tags:
+    - ldap    

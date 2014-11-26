@@ -1,0 +1,23 @@
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: syncprov
+
+dn: olcDatabase={0}config,cn=config
+changetype: modify
+replace: olcRootPW
+olcRootPW: {{ h_cnconfig_password.stdout }}
+
+dn: cn=config
+changeType: modify
+replace: olcServerID
+{% for ldaphost in groups['ldapservers'] if ldaphost == ansible_fqdn %}
+olcServerID: {{ loop.index }}
+{% endfor %}
+
+dn: olcOverlay=syncprov,olcDatabase={0}config,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcSyncProvConfig
+olcOverlay: syncprov
+
